@@ -4,7 +4,7 @@ import java.util.Scanner;
 public class Novichok {
     public static void main(String[] args) {
         Scanner userScanner = new Scanner(System.in);
-
+        TaskManager taskManager = new TaskManager();
         // user input exit keywords
         List<String> exitKeywords = List.of("exit", "quit", "bye");
 
@@ -28,15 +28,20 @@ public class Novichok {
             // exit condition check
             if (exitKeywords.contains(userCommand.toLowerCase())) {
                 System.out.println("\t-----------------------");
-                System.out.println("\tBye. Hope to see you again");
+                System.out.println("\tBye. Hope to see you again soon!");
                 System.out.println("\t-----------------------");
                 break;
+            } else if (userCommand.equalsIgnoreCase("list")) {
+                System.out.println("\t-----------------------");
+                taskManager.printList();
+                System.out.println("\t-----------------------");
+            } else {
+                // command echo
+                System.out.println("\t-----------------------");
+                System.out.println("\tadded: " + userCommand);
+                taskManager.addTask(userCommand);
+                System.out.println("\t-----------------------\n");
             }
-
-            // command echo
-            System.out.println("\t-----------------------");
-            System.out.println("\t" + userCommand);
-            System.out.println("\t-----------------------\n");
         }
     }
 }
