@@ -26,22 +26,20 @@ public class Novichok {
             String userCommand = userScanner.nextLine().trim();
 
             // exit condition check
+            System.out.println("\t-----------------------");
             if (exitKeywords.contains(userCommand.toLowerCase())) {
-                System.out.println("\t-----------------------");
                 System.out.println("\tBye. Hope to see you again soon!");
-                System.out.println("\t-----------------------");
                 break;
             } else if (userCommand.equalsIgnoreCase("list")) {
-                System.out.println("\t-----------------------");
                 taskManager.printList();
-                System.out.println("\t-----------------------");
+            } else if (userCommand.split(" ")[0].contains("mark")) {
+                taskManager.taskStatusUpdate(userCommand);
             } else {
                 // command echo
-                System.out.println("\t-----------------------");
                 System.out.println("\tadded: " + userCommand);
                 taskManager.addTask(userCommand);
-                System.out.println("\t-----------------------\n");
             }
+            System.out.println("\t-----------------------");
         }
     }
 }

@@ -43,4 +43,27 @@ public class TaskManager {
             j++;
         }
     }
+
+    public void updateTask(String update, Task task) {
+        if (update.equalsIgnoreCase("unmark")) {
+            task.setStatus(false);
+        } else if (update.equalsIgnoreCase("mark")) {
+            task.setStatus(true);
+        }
+    }
+
+    public void taskStatusUpdate(String updateString) {
+        String[] update = updateString.split(" ");
+        for (int i = 1; i < update.length; i++) {
+             try {
+                 Task taskToUpdateIndex = getTaskList().get(Integer.parseInt(update[i]) - 1);
+                 updateTask(update[0], taskToUpdateIndex);
+                 System.out.println("Task " + update[i] + " has been updated");
+                 System.out.println(taskToUpdateIndex.toString());
+
+             } catch (Exception error) {
+                 System.out.println("Task " + update[i] + " wasn't successfully updated");
+             }
+        }
+    }
 }
