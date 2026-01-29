@@ -2,9 +2,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Represents a manager that handles the list of task
+ */
 public class TaskManager {
     private final List<Task> taskList = new ArrayList<>();
 
+    // constructors
     public TaskManager() {
 
     }
@@ -36,6 +40,7 @@ public class TaskManager {
         return this.taskList;
     }
 
+    // prints all recorded tasks
     public void printList() {
         int j = 1;
         for (Task task: getTaskList()) {
@@ -44,6 +49,7 @@ public class TaskManager {
         }
     }
 
+    // updates tasks to done/undone
     public void updateTask(String update, Task task) {
         if (update.equalsIgnoreCase("unmark")) {
             task.setStatus(false);
@@ -52,6 +58,7 @@ public class TaskManager {
         }
     }
 
+    // handles bulk task update
     public void taskStatusUpdate(String updateString) {
         String[] update = updateString.split(" ");
         for (int i = 1; i < update.length; i++) {

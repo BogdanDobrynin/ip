@@ -20,13 +20,13 @@ public class Task {
         return this.description;
     }
 
-    public void setStatus(Boolean status) {
+    public void setStatus(boolean status) {
         this.isDone = status;
     }
 
     @Override
     public String toString() {
-        String status = getStatus() ? "[X]" : "[ ]";
+        String status = isDone ? "[X]" : "[ ]";
         return status + " " + description;
     }
 }
