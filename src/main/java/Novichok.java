@@ -24,7 +24,6 @@ public class Novichok {
         // user input exit keywords
         List<String> exitKeywords = List.of("exit", "quit", "bye");
 
-
         System.out.println(LOGO);
         System.out.println("Greetings user!\n");
         System.out.println("How can I serve you?");
@@ -36,23 +35,25 @@ public class Novichok {
             if (userCommand.isEmpty()) {
                 continue;
             }
-            // user's action
-            String userAction = userCommand.split(" ")[0].toLowerCase(); // Store it once
 
-            // exit condition check
+            // Split the command into two parts: action + args
+            String[] parts = userCommand.split(" ", 2);
+
+            String commandAction = parts[0].toLowerCase().trim();
+            // allows to parse action-only commands
+            String commandArguments = "";
+
+            // add the second element, if present
+            if (parts.length > 1) {
+                commandArguments = parts[1].trim();
+            }
+
             System.out.println(DIVIDER);
-            if (exitKeywords.contains(userAction)) {
+            if (exitKeywords.contains(commandAction)) {
                 System.out.println("\tBye. Hope to see you again soon!");
                 break;
-            } else if (userAction.equals("list")) {
-                taskManager.printList();
-            } else if (userAction.equalsIgnoreCase("mark") ||
-                    userAction.equalsIgnoreCase("unmark")) {
-                taskManager.taskStatusUpdate(userCommand);
             } else {
-                // command echo
-                System.out.println("\tadded: " + userCommand);
-                taskManager.addTask(userCommand);
+                taskManager.executeCommand(commandAction, commandArguments);
             }
             System.out.println(DIVIDER);
         }
