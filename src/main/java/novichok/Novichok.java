@@ -1,3 +1,6 @@
+package novichok;
+
+import novichok.logic.TaskManager;
 import java.util.List;
 import java.util.Scanner;
 
@@ -5,11 +8,13 @@ public class Novichok {
     /**
      * Divider line used to separate bot responses for better readability.
      */
+
     private static final String DIVIDER = "\t-----------------------";
 
     /**
      * Novichok logo branding
      */
+
     private static final String LOGO = """
              _   _           _      _            _
             | \\ | | _____  _(_) ___| |__   ___  | | __
@@ -35,7 +40,6 @@ public class Novichok {
             if (userCommand.isEmpty()) {
                 continue;
             }
-
             // Split the command into two parts: action + args
             String[] parts = userCommand.split(" ", 2);
 
