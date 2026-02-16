@@ -25,7 +25,7 @@ public class Novichok {
 
     public static void main(String[] args) {
         Scanner userScanner = new Scanner(System.in);
-        TaskManager taskManager = new TaskManager();
+        TaskManager taskManager = new TaskManager("data/list.log");
         // user input exit keywords
         List<String> exitKeywords = List.of("exit", "quit", "bye");
 
