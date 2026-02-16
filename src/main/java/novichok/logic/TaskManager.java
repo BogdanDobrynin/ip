@@ -7,6 +7,7 @@ import novichok.tasks.Task;
 import novichok.tasks.ToDo;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -51,19 +52,26 @@ public class TaskManager {
 
     // Your bulk handler calls the specialist
     public void taskStatusUpdate(String action, String args) {
-        String[] indices = args.split(" ");
-        boolean statusToSet = action.equalsIgnoreCase("mark");
-        for (String indexStr : indices) {
-            try {
-                int idx = Integer.parseInt(indexStr) - 1;
-                Task task = taskList.get(idx);
+        try {
+            List<Integer> indices = sanitizeIndices(args);
+            boolean statusToSet = action.equalsIgnoreCase("mark");
+            List<String> errors = new ArrayList<>();
 
-                setTaskStatus(task, statusToSet);
-
-                System.out.println("Task " + (idx + 1) + " updated: " + task);
-            } catch (Exception e) {
-                System.out.println("Could not update task: " + indexStr);
+            for (int index : indices) {
+                if (index >= 0 && index < taskList.size()) {
+                    Task task = taskList.get(index);
+                    setTaskStatus(task, statusToSet);
+                    System.out.println("Task " + (index + 1) + " updated: " + task);
+                } else {
+                    errors.add(String.valueOf(index + 1));
+                }
             }
+
+            if (!errors.isEmpty()) {
+                System.out.println("Notice: The following indices were out of bounds: " + String.join(", ", errors));
+            }
+        } catch (NovichokException e) {
+            System.out.println(e.getMessage());
         }
     }
 
@@ -71,36 +79,30 @@ public class TaskManager {
     public void executeCommand(String commandAction, String args) {
         try {
             switch (commandAction.toLowerCase()) {
-                case "list":
-                    printList();
-                    break;
-                case "mark", "unmark":
-                    taskStatusUpdate(commandAction, args);
-                    break;
-                case "todo":
-                    addToDo(args);
-                    break;
-                case "deadline":
-                    addDeadline(args);
-                    break;
-                case "event":
-                    addEvent(args);
-                    break;
-                default:
-                    throw new NovichokException("This is not a valid command");
+            case "list":
+                printList();
+                break;
+            case "mark", "unmark":
+                taskStatusUpdate(commandAction, args);
+                break;
+            case "todo":
+                addToDo(args);
+                break;
+            case "deadline":
+                addDeadline(args);
+                break;
+            case "event":
+                addEvent(args);
+                break;
+            case "delete":
+                deleteTask(args);
+                break;
+            default:
+                throw new NovichokException("This is not a valid command");
             }
         } catch (NovichokException e) {
             System.out.println(e.getMessage());
         }
-    }
-
-    private void addToDo(String args) throws NovichokException {
-        if (args.trim().isEmpty()) {
-            throw new NovichokException("The 'to-do' has no description, skipping...");
-        }
-        ToDo toDoTask = new ToDo(args);
-        taskList.add(toDoTask);
-        printAddedMessage(toDoTask);
     }
 
     private void addDeadline(String args) throws NovichokException {
@@ -135,9 +137,68 @@ public class TaskManager {
         printAddedMessage(eventTask);
     }
 
+    private void addToDo(String args) throws NovichokException {
+        if (args.trim().isEmpty()) {
+            throw new NovichokException("The 'to-do' has no description, skipping...");
+        }
+        ToDo toDoTask = new ToDo(args);
+        taskList.add(toDoTask);
+        printAddedMessage(toDoTask);
+    }
+
+    private void deleteTask(String args) throws NovichokException {
+        List<Integer> indicesToDelete = sanitizeIndices(args);
+        List<String> outOfBounds = new ArrayList<>();
+        
+        // processes indices to delete
+        for (int index : indicesToDelete) {
+            if (index >= 0 && index < taskList.size()) {
+                Task taskToRemove = this.taskList.remove(index);
+                printDeletedMessage(taskToRemove);
+            } else {
+                outOfBounds.add(String.valueOf(index + 1));
+            }
+        }
+
+        // Handles out of bound indices safely
+        if (!outOfBounds.isEmpty()) {
+            throw new NovichokException("The following indices were out of bounds: " +
+                    String.join(", ", outOfBounds));
+        }
+    }
+
     private void printAddedMessage(Task task) {
         System.out.println("The following task has been added to the list:");
         System.out.println("\t" + task.toString());
         System.out.println("Your list has " + taskList.size() + " task(s) in progress");
+    }
+
+    private void printDeletedMessage(Task task) {
+        System.out.println("Executed. The following task is no more:");
+        System.out.println("\t" + task.toString());
+        System.out.println("There are " + taskList.size() + " tasks remaining.");
+    }
+
+    // User input sanitization
+    private List<Integer> sanitizeIndices(String args) throws NovichokException {
+        String[] inputs = args.trim().split("\\s+");
+        List<Integer> indices = new ArrayList<>();
+
+        for (String input : inputs) {
+            try {
+                int index = Integer.parseInt(input);
+                indices.add(index);
+            } catch (NumberFormatException e) {
+                throw new NovichokException("'" + input + "' is not a valid task number. " +
+                        "Please use numbers (e.g., '1 3').");
+            }
+        }
+
+        // Return a cleaned, distinct, and reverse-sorted list
+        return indices.stream()
+                .distinct()
+                .sorted(Comparator.reverseOrder())
+                .map(i -> i - 1) // Now index 1 becomes 0, 5 becomes 4
+                .toList();
     }
 }
