@@ -1,12 +1,14 @@
 package novichok.logic;
 
+import novichok.exceptions.NovichokException;
+import novichok.storage.Storage;
 import novichok.tasks.Deadline;
 import novichok.tasks.Event;
-import novichok.exceptions.NovichokException;
 import novichok.tasks.Task;
 import novichok.tasks.ToDo;
+
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
@@ -16,20 +18,11 @@ import java.util.List;
 
 public class TaskManager {
     private final List<Task> taskList = new ArrayList<>();
+    private final Storage storage;
 
     // constructors
-    public TaskManager() {
-
-    }
-
-    // array type task handling
-    public void addTask(Task[] taskList) {
-        this.taskList.addAll(Arrays.asList(taskList));
-    }
-
-    // list type task handling
-    public void addTask(List<Task> taskList) {
-        this.taskList.addAll(taskList);
+    public TaskManager(String filePath) {
+        this.storage = new Storage(filePath);
     }
 
     public List<Task> getTaskList() {
@@ -78,10 +71,12 @@ public class TaskManager {
     //** User Action passes the action to take, user command parses the arguments
     public void executeCommand(String commandAction, String args) {
         try {
+            boolean isListModified = true;
+
             switch (commandAction.toLowerCase()) {
             case "list":
                 printList();
-                break;
+                isListModified = false;break;
             case "mark", "unmark":
                 taskStatusUpdate(commandAction, args);
                 break;
@@ -100,9 +95,15 @@ public class TaskManager {
             default:
                 throw new NovichokException("This is not a valid command");
             }
+
+            if (isListModified) {
+                storage.saveListToDisk(taskList);
+            }
+
         } catch (NovichokException e) {
             System.out.println(e.getMessage());
-        }
+        } catch (IOException e) {
+            System.out.println("Novichok: Could not save tasks to disk. " + e.getMessage());        }
     }
 
     private void addDeadline(String args) throws NovichokException {
@@ -149,7 +150,7 @@ public class TaskManager {
     private void deleteTask(String args) throws NovichokException {
         List<Integer> indicesToDelete = sanitizeIndices(args);
         List<String> outOfBounds = new ArrayList<>();
-        
+
         // processes indices to delete
         for (int index : indicesToDelete) {
             if (index >= 0 && index < taskList.size()) {
