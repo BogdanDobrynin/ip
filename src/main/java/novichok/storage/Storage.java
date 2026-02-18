@@ -26,7 +26,7 @@ public class Storage {
 
         try (FileWriter writer = new FileWriter(listLog)) { // Overwrites old save with new list
             for (Task t : tasks) {
-                writer.write(t.toString() + "\n");
+                writer.write(t.toFileFormat() + "\n");
             }
         }
     }

@@ -1,6 +1,8 @@
 package novichok;
 
 import novichok.logic.TaskManager;
+import novichok.ui.Logo;
+
 import java.util.List;
 import java.util.Scanner;
 
@@ -8,31 +10,18 @@ public class Novichok {
     /**
      * Divider line used to separate bot responses for better readability.
      */
+    private static final String DIVIDER = "════════════════════════════════════════════════════════════════════════════════════════════════";
 
-    private static final String DIVIDER = "\t-----------------------";
-
-    /**
-     * Novichok logo branding
-     */
-
-    private static final String LOGO = """
-             _   _           _      _            _
-            | \\ | | _____  _(_) ___| |__   ___  | | __
-            |  \\| |/ _\\ \\ / / |/ __| '_ \\ / _ \\ | |/ /
-            | |\\  | (_)\\ V /| | (__| | | | (_) ||   <
-            |_| \\_|\\___/\\_/ |_|\\___|_| |_|\\___/ |_|\\_\\
-            """;
-
-    public static void main(String[] args) {
+    public void run() {
         Scanner userScanner = new Scanner(System.in);
         TaskManager taskManager = new TaskManager("data/list.log");
         // user input exit keywords
         List<String> exitKeywords = List.of("exit", "quit", "bye");
 
-        System.out.println(LOGO);
+        Logo.printLogo();
         System.out.println("Greetings user!\n");
         System.out.println("How can I serve you?");
-        System.out.println("-----------------------");
+        System.out.println(DIVIDER);
 
         while (true) {
             // input acquisition and simple sanitization
@@ -61,5 +50,9 @@ public class Novichok {
             }
             System.out.println(DIVIDER);
         }
+    }
+
+    public static void main(String[] args) {
+        new Novichok().run();
     }
 }

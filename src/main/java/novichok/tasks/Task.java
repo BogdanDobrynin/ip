@@ -26,6 +26,10 @@ public abstract class Task {
         this.isDone = status;
     }
 
+    public String toFileFormat() {
+        return (isDone ? "1" : "0") + " | " + description;
+    }
+
     @Override
     public String toString() {
         String status = isDone ? "[X]" : "[ ]";

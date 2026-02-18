@@ -76,7 +76,8 @@ public class TaskManager {
             switch (commandAction.toLowerCase()) {
             case "list":
                 printList();
-                isListModified = false;break;
+                isListModified = false;
+                break;
             case "mark", "unmark":
                 taskStatusUpdate(commandAction, args);
                 break;
@@ -92,6 +93,18 @@ public class TaskManager {
             case "delete":
                 deleteTask(args);
                 break;
+                case "filter":
+                    List<Task> filtered = filterBy(args);
+                    if (filtered.isEmpty()) {
+                        System.out.println("No tasks found matching that criteria.");
+                    } else {
+                        System.out.println("Here are the matching tasks in your list:");
+                        for (int i = 0; i < filtered.size(); i++) {
+                            System.out.println("\t" + (i + 1) + ". " + filtered.get(i));
+                        }
+                    }
+                    isListModified = false;
+                    break;
             default:
                 throw new NovichokException("This is not a valid command");
             }
@@ -107,17 +120,22 @@ public class TaskManager {
     }
 
     private void addDeadline(String args) throws NovichokException {
-        // format: [description] /by [time]
         String[] parts = args.split(" /by ", 2);
         if (parts.length < 2) {
-            throw new NovichokException("Error: Use 'deadline [desc] /by [time]'");
+            throw new NovichokException("Error: Use 'deadline [desc] /by [d/M/yyyy HHmm]''");
         }
+
         if (parts[0].trim().isEmpty()) {
-            throw new NovichokException("The 'deadline' has no description, skipping...");
+            throw new NovichokException("The 'deadline' has no description");
         }
-        Deadline deadlineTask = new Deadline(parts[0], parts[1]);
-        taskList.add(deadlineTask);
-        printAddedMessage(deadlineTask);
+
+        try {
+            Deadline deadlineTask = new Deadline(parts[0].trim(), parts[1].trim());
+            taskList.add(deadlineTask);
+            printAddedMessage(deadlineTask);
+        } catch (java.time.format.DateTimeParseException e) {
+            throw new NovichokException("Format error! Please use: d/M/yyyy HHmm (e.g., 19/2/2026 1800)");
+        }
     }
 
     private void addEvent(String args) throws NovichokException {
@@ -133,9 +151,13 @@ public class TaskManager {
         if (timeParts.length < 2) {
             throw new NovichokException("Error: Missing '/to' section");
         }
-        Event eventTask = new Event(parts[0], timeParts[0], timeParts[1]);
-        taskList.add(eventTask);
-        printAddedMessage(eventTask);
+        try {
+            Event eventTask = new Event(parts[0], timeParts[0], timeParts[1]);
+            taskList.add(eventTask);
+            printAddedMessage(eventTask);
+        } catch (java.time.format.DateTimeParseException e) {
+            throw new NovichokException("Format error! Please use: d/M/yyyy HHmm (e.g., 19/2/2026 1800)");
+        }
     }
 
     private void addToDo(String args) throws NovichokException {
@@ -178,6 +200,61 @@ public class TaskManager {
         System.out.println("Executed. The following task is no more:");
         System.out.println("\t" + task.toString());
         System.out.println("There are " + taskList.size() + " tasks remaining.");
+    }
+
+
+    // TODO: increase robustness of filtering
+    private List<Task> filterBy(String args) throws NovichokException {
+        if (args.trim().isEmpty()) {
+            throw new NovichokException("Filter command needs arguments (e.g., filter /date 12/12/2026 1800)");
+        }
+
+        String[] parts = args.split("\\s+", 2);
+        if (parts.length < 2) {
+            throw new NovichokException("Usage: filter [type] [value] (e.g., filter /name homework)");
+        }
+
+        String filterAction = parts[0].toLowerCase();
+        String filterValue = parts[1].trim();
+        List<Task> filteredTaskList = new ArrayList<>();
+
+        switch (filterAction) {
+        case "/date":
+            try {
+                for (Task task : taskList) {
+                    if (task instanceof Deadline && ((Deadline) task).isOn(filterValue)) {
+                        filteredTaskList.add(task);
+                    } else if (task instanceof Event && ((Event) task).isOn(filterValue)) {
+                        filteredTaskList.add(task);
+                    }
+                }
+            } catch (java.time.format.DateTimeParseException e) {
+                throw new NovichokException("To filter by date, please use the format: d/M/yyyy HHmm");
+            }
+            break;
+        case "/name":
+            for (Task task : taskList) {
+                // Check if the description contains the keyword
+                if (task.getDescription().toLowerCase().contains(filterValue.toLowerCase())) {
+                    filteredTaskList.add(task);
+                }
+            }
+            break;
+        case "/type":
+            for (Task task : taskList) {
+                if (filterValue.equalsIgnoreCase("todo") && task instanceof ToDo) {
+                    filteredTaskList.add(task);
+                } else if (filterValue.equalsIgnoreCase("deadline") && task instanceof Deadline) {
+                    filteredTaskList.add(task);
+                } else if (filterValue.equalsIgnoreCase("event") && task instanceof Event) {
+                    filteredTaskList.add(task);
+                }
+            }
+            break;
+            default:
+                throw new NovichokException("Invalid filter type! Use /date, /name, or /type.");
+        }
+        return filteredTaskList;
     }
 
     // User input sanitization

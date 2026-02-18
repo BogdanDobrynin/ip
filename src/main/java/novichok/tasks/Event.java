@@ -1,18 +1,45 @@
 package novichok.tasks;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+
 public class Event extends Task {
-    private String startDate;
-    private String endDate;
+    private LocalDateTime startDate;
+    private LocalDateTime endDate;
+
+    // Use a static formatter to avoid creating a new one for every object
+    private static final DateTimeFormatter INPUT_FORMAT = DateTimeFormatter.ofPattern("d/M/yyyy HHmm");
+    private static final DateTimeFormatter OUTPUT_FORMAT = DateTimeFormatter.ofPattern("MMM dd yyyy, h:mm a");
 
     public Event(String description, String startDate, String endDate) {
         super(description);
-        this.startDate = startDate;
-        this.endDate = endDate;
+        this.startDate = LocalDateTime.parse(startDate, INPUT_FORMAT);
+        this.endDate = LocalDateTime.parse(endDate, INPUT_FORMAT);
+    }
+
+    public boolean isOn(String date) {
+        try {
+            LocalDateTime targetDateTime = LocalDateTime.parse(date, INPUT_FORMAT);
+            LocalDate searchDate = targetDateTime.toLocalDate();
+            return searchDate.equals(this.startDate.toLocalDate()) ||
+                    searchDate.equals(this.endDate.toLocalDate());
+        } catch (DateTimeParseException e) {
+            return false;
+        }
+    }
+
+    @Override
+    public String toFileFormat() {
+        return "E | " + super.toFileFormat() + " | " +
+                startDate.format(INPUT_FORMAT) + " | " + endDate.format(INPUT_FORMAT);
     }
 
     @Override
     public String toString() {
         return "[E]" + super.toString() + " (from: " +
-                startDate + " to: " + endDate + ")";
+                startDate.format(OUTPUT_FORMAT) + " to: " +
+                endDate.format(OUTPUT_FORMAT) + ")";
     }
 }
