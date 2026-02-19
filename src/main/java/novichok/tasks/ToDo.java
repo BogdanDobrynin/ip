@@ -7,6 +7,11 @@ public class ToDo extends Task {
     }
 
     @Override
+    public String toFileFormat() {
+        return "T | " + (this.getStatus() ? "1" : "0") + " | " + description;
+    }
+
+    @Override
     public String toString() {
         return "[T]" + super.toString();
     }

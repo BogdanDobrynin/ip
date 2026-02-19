@@ -24,10 +24,10 @@ public class Deadline extends Task {
 
     @Override
     public String toFileFormat() {
-        // Save the date in the INPUT_FORMAT so it can be re-parsed easily later
-        return "D | " + super.toFileFormat() + " | " + by.format(INPUT_FORMAT);
+        // Ensure the date is formatted back into the string format your constructor expects
+        String dateString = by.format(java.time.format.DateTimeFormatter.ofPattern("d/M/yyyy HHmm"));
+        return "D | " + (getStatus() ? "1" : "0") + " | " + description + " | " + dateString;
     }
-
     @Override
     public String toString() {
         DateTimeFormatter out = DateTimeFormatter.ofPattern("MMM dd yyyy, h:mm a");

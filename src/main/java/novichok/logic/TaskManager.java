@@ -4,6 +4,7 @@ import novichok.exceptions.NovichokException;
 import novichok.storage.Storage;
 import novichok.tasks.Deadline;
 import novichok.tasks.Event;
+import novichok.ui.Ui;
 import novichok.tasks.Task;
 import novichok.tasks.ToDo;
 
@@ -19,104 +20,18 @@ import java.util.List;
 public class TaskManager {
     private final List<Task> taskList = new ArrayList<>();
     private final Storage storage;
+    private final Ui ui;
 
     // constructors
-    public TaskManager(String filePath) {
+    public TaskManager(String filePath, Ui ui) {
         this.storage = new Storage(filePath);
-    }
-
-    public List<Task> getTaskList() {
-        return this.taskList;
-    }
-
-    // prints all recorded tasks
-    public void printList() {
-        int j = 1;
-        for (Task task: getTaskList()) {
-            System.out.println("\t" + j + ". " + task.toString());
-            j++;
-        }
-    }
-
-    // updates tasks to done/undone
-    public void setTaskStatus(Task task, boolean isDone) {
-        task.setStatus(isDone);
-    }
-
-    // Your bulk handler calls the specialist
-    public void taskStatusUpdate(String action, String args) {
+        this.ui = ui;
         try {
-            List<Integer> indices = sanitizeIndices(args);
-            boolean statusToSet = action.equalsIgnoreCase("mark");
-            List<String> errors = new ArrayList<>();
-
-            for (int index : indices) {
-                if (index >= 0 && index < taskList.size()) {
-                    Task task = taskList.get(index);
-                    setTaskStatus(task, statusToSet);
-                    System.out.println("Task " + (index + 1) + " updated: " + task);
-                } else {
-                    errors.add(String.valueOf(index + 1));
-                }
-            }
-
-            if (!errors.isEmpty()) {
-                System.out.println("Notice: The following indices were out of bounds: " + String.join(", ", errors));
-            }
-        } catch (NovichokException e) {
-            System.out.println(e.getMessage());
+            // You should implement this method in your Storage class
+            this.taskList.addAll(storage.loadListFromDisk());
+        } catch (IOException | NovichokException e) {
+            ui.printCustomMessage("Warning: Could not load existing tasks. Starting fresh.");
         }
-    }
-
-    //** User Action passes the action to take, user command parses the arguments
-    public void executeCommand(String commandAction, String args) {
-        try {
-            boolean isListModified = true;
-
-            switch (commandAction.toLowerCase()) {
-            case "list":
-                printList();
-                isListModified = false;
-                break;
-            case "mark", "unmark":
-                taskStatusUpdate(commandAction, args);
-                break;
-            case "todo":
-                addToDo(args);
-                break;
-            case "deadline":
-                addDeadline(args);
-                break;
-            case "event":
-                addEvent(args);
-                break;
-            case "delete":
-                deleteTask(args);
-                break;
-                case "filter":
-                    List<Task> filtered = filterBy(args);
-                    if (filtered.isEmpty()) {
-                        System.out.println("No tasks found matching that criteria.");
-                    } else {
-                        System.out.println("Here are the matching tasks in your list:");
-                        for (int i = 0; i < filtered.size(); i++) {
-                            System.out.println("\t" + (i + 1) + ". " + filtered.get(i));
-                        }
-                    }
-                    isListModified = false;
-                    break;
-            default:
-                throw new NovichokException("This is not a valid command");
-            }
-
-            if (isListModified) {
-                storage.saveListToDisk(taskList);
-            }
-
-        } catch (NovichokException e) {
-            System.out.println(e.getMessage());
-        } catch (IOException e) {
-            System.out.println("Novichok: Could not save tasks to disk. " + e.getMessage());        }
     }
 
     private void addDeadline(String args) throws NovichokException {
@@ -190,19 +105,61 @@ public class TaskManager {
         }
     }
 
-    private void printAddedMessage(Task task) {
-        System.out.println("The following task has been added to the list:");
-        System.out.println("\t" + task.toString());
-        System.out.println("Your list has " + taskList.size() + " task(s) in progress");
+    //** User Action passes the action to take, user command parses the arguments
+    public void executeCommand(String commandAction, String args) {
+        try {
+            boolean isListModified = true;
+
+            switch (commandAction.toLowerCase()) {
+                case "help":
+                    ui.printMenu(5);
+                    isListModified = false;
+                    break;
+                case "list":
+                    printList();
+                    isListModified = false;
+                    break;
+                case "mark", "unmark":
+                    taskStatusUpdate(commandAction, args);
+                    break;
+                case "todo":
+                    addToDo(args);
+                    break;
+                case "deadline":
+                    addDeadline(args);
+                    break;
+                case "event":
+                    addEvent(args);
+                    break;
+                case "delete":
+                    deleteTask(args);
+                    break;
+                case "filter":
+                    List<Task> filtered = filterBy(args);
+                    if (filtered.isEmpty()) {
+                        ui.printCustomMessage("No tasks found matching that criteria.");
+                    } else {
+                        ui.printCustomMessage("Here are the matching tasks in your list:");
+                        for (int i = 0; i < filtered.size(); i++) {
+                            ui.printCustomMessage("\t" + (i + 1) + ". " + filtered.get(i));
+                        }
+                    }
+                    isListModified = false;
+                    break;
+                default:
+                    throw new NovichokException("This is not a valid command");
+            }
+
+            if (isListModified) {
+                storage.saveListToDisk(taskList);
+            }
+
+        } catch (NovichokException e) {
+            ui.printCustomMessage(e.getMessage());
+        } catch (IOException e) {
+            ui.printCustomMessage("Novichok: Could not save tasks to disk. " + e.getMessage());
+        }
     }
-
-    private void printDeletedMessage(Task task) {
-        System.out.println("Executed. The following task is no more:");
-        System.out.println("\t" + task.toString());
-        System.out.println("There are " + taskList.size() + " tasks remaining.");
-    }
-
-
     // TODO: increase robustness of filtering
     private List<Task> filterBy(String args) throws NovichokException {
         if (args.trim().isEmpty()) {
@@ -219,42 +176,67 @@ public class TaskManager {
         List<Task> filteredTaskList = new ArrayList<>();
 
         switch (filterAction) {
-        case "/date":
-            try {
+            case "/date":
+                try {
+                    for (Task task : taskList) {
+                        if (task instanceof Deadline && ((Deadline) task).isOn(filterValue)) {
+                            filteredTaskList.add(task);
+                        } else if (task instanceof Event && ((Event) task).isOn(filterValue)) {
+                            filteredTaskList.add(task);
+                        }
+                    }
+                } catch (java.time.format.DateTimeParseException e) {
+                    throw new NovichokException("To filter by date, please use the format: d/M/yyyy HHmm");
+                }
+                break;
+            case "/name":
                 for (Task task : taskList) {
-                    if (task instanceof Deadline && ((Deadline) task).isOn(filterValue)) {
-                        filteredTaskList.add(task);
-                    } else if (task instanceof Event && ((Event) task).isOn(filterValue)) {
+                    // Check if the description contains the keyword
+                    if (task.getDescription().toLowerCase().contains(filterValue.toLowerCase())) {
                         filteredTaskList.add(task);
                     }
                 }
-            } catch (java.time.format.DateTimeParseException e) {
-                throw new NovichokException("To filter by date, please use the format: d/M/yyyy HHmm");
-            }
-            break;
-        case "/name":
-            for (Task task : taskList) {
-                // Check if the description contains the keyword
-                if (task.getDescription().toLowerCase().contains(filterValue.toLowerCase())) {
-                    filteredTaskList.add(task);
+                break;
+            case "/type":
+                for (Task task : taskList) {
+                    if (filterValue.equalsIgnoreCase("todo") && task instanceof ToDo) {
+                        filteredTaskList.add(task);
+                    } else if (filterValue.equalsIgnoreCase("deadline") && task instanceof Deadline) {
+                        filteredTaskList.add(task);
+                    } else if (filterValue.equalsIgnoreCase("event") && task instanceof Event) {
+                        filteredTaskList.add(task);
+                    }
                 }
-            }
-            break;
-        case "/type":
-            for (Task task : taskList) {
-                if (filterValue.equalsIgnoreCase("todo") && task instanceof ToDo) {
-                    filteredTaskList.add(task);
-                } else if (filterValue.equalsIgnoreCase("deadline") && task instanceof Deadline) {
-                    filteredTaskList.add(task);
-                } else if (filterValue.equalsIgnoreCase("event") && task instanceof Event) {
-                    filteredTaskList.add(task);
-                }
-            }
-            break;
+                break;
             default:
                 throw new NovichokException("Invalid filter type! Use /date, /name, or /type.");
         }
         return filteredTaskList;
+    }
+
+    public List<Task> getTaskList() {
+        return this.taskList;
+    }
+
+    private void printAddedMessage(Task task) {
+        ui.printCustomMessage("The following task has been added to the list:");
+        ui.printCustomMessage("\t" + task.toString());
+        ui.printCustomMessage("Your list has " + taskList.size() + " task(s) in progress");
+    }
+
+    private void printDeletedMessage(Task task) {
+        ui.printCustomMessage("Executed. The following task is no more:");
+        ui.printCustomMessage("\t" + task.toString());
+        ui.printCustomMessage("There are " + taskList.size() + " tasks remaining.");
+    }
+
+    // prints all recorded tasks
+    public void printList() {
+        int j = 1;
+        for (Task task: getTaskList()) {
+            ui.printCustomMessage("\t" + j + ". " + task.toString());
+            j++;
+        }
     }
 
     // User input sanitization
@@ -278,5 +260,33 @@ public class TaskManager {
                 .sorted(Comparator.reverseOrder())
                 .map(i -> i - 1) // Now index 1 becomes 0, 5 becomes 4
                 .toList();
+    }
+
+    public void setTaskStatus(Task task, boolean isDone) {
+        task.setStatus(isDone);
+    }
+
+    public void taskStatusUpdate(String action, String args) {
+        try {
+            List<Integer> indices = sanitizeIndices(args);
+            boolean statusToSet = action.equalsIgnoreCase("mark");
+            List<String> errors = new ArrayList<>();
+
+            for (int index : indices) {
+                if (index >= 0 && index < taskList.size()) {
+                    Task task = taskList.get(index);
+                    setTaskStatus(task, statusToSet);
+                    ui.printCustomMessage("Task " + (index + 1) + " updated: " + task);
+                } else {
+                    errors.add(String.valueOf(index + 1));
+                }
+            }
+
+            if (!errors.isEmpty()) {
+                ui.printCustomMessage("Notice: The following indices were out of bounds: " + String.join(", ", errors));
+            }
+        } catch (NovichokException e) {
+            ui.printCustomMessage(e.getMessage());
+        }
     }
 }
