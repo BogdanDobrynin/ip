@@ -5,6 +5,7 @@ import novichok.exceptions.NovichokException;
 import java.util.Scanner;
 
 public class Ui {
+    /** A long decorative line to keep the terminal looking organized. */
     private static final String DIVIDER = "════════════════════════════════════════════════════════════════════════════════════════════════";
     private final Scanner scanner;
 
@@ -35,6 +36,14 @@ public class Ui {
         // We can also animate the divider for a cool "scanning" effect
         typewriterPrint(DIVIDER + "\n", 2);
     }
+
+    /**
+     * Displays the command manual. This is the "help" screen that
+     * explains how to use todos, deadlines, events, and filters.
+     *
+     * @param speed The speed (in ms) of the typewriter effect for the menu.
+     */
+
 
     public void printMenu(int speed) {
         String menuContent = """

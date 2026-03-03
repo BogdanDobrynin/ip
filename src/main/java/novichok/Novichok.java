@@ -6,8 +6,13 @@ import novichok.ui.Ui;
 import java.util.List;
 
 public class Novichok {
+
     /**
-     * Divider line used to separate bot responses for better readability.
+     * The run method kicks off the main application loop.
+     * It handles the initial greetings, reads what the user types, splits those
+     * inputs into commands and arguments, and then sends them off to be processed.
+     *
+     * The loop keeps spinning until the user types an exit keyword like "bye" or "quit".
      */
 
     public void run() {

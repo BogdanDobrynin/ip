@@ -15,12 +15,26 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Storage is the storage...
+ * Its job is to make sure your tasks actually stick around on the hard drive
+ * after you close the program. It handles reading from and writing to a text file.
+ */
+
 public class Storage {
     private final String filePath;
 
     public Storage(String filePath) {
         this.filePath = filePath;
     }
+
+    /**
+     * Takes the current list of tasks and dumps them into the save file.
+     * If the folders don't exist yet, this method will try to create them first.
+     *
+     * @param tasks The list of Task objects to be archived.
+     * @throws IOException If something goes wrong while writing to the disk.
+     */
 
     public void saveListToDisk(List<Task> tasks) throws IOException {
         File listLog = new File(filePath);
@@ -38,6 +52,16 @@ public class Storage {
             }
         }
     }
+
+    /**
+     * Looks for the save file and translates its contents back into Task objects.
+     * If the file isn't found, it just assumes this is the first time the app
+     * is running and returns an empty list.
+     *
+     * @return A list of tasks loaded from the disk.
+     * @throws IOException If the file is unreadable.
+     * @throws NovichokException If the data inside the file is badly formatted.
+     */
 
     public List<Task> loadListFromDisk() throws IOException, NovichokException {
         List<Task> loadedTasks = new ArrayList<>();
@@ -57,6 +81,15 @@ public class Storage {
         }
         return loadedTasks;
     }
+
+    /**
+     * The "translator" method. It takes a single line from the text file
+     * (separated by " | ") and reconstructs the appropriate Task object.
+     *
+     * @param line A raw string from the save file.
+     * @return A Task object (ToDo, Deadline, or Event), or null if the line is corrupted.
+     * @throws NovichokException If the task type is unrecognized.
+     */
 
     private Task parseTaskFromLine(String line) throws NovichokException {
         // Split by the pipe character (escaped because | is a regex special character)

@@ -14,7 +14,17 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * Represents a manager that handles the list of task
+ * The TaskManager is essentially the "brain" of the application.
+ * It handles the heavy lifting: managing the list of tasks, routing commands
+ * to the right actions, and making sure everything gets saved to the hard drive.
+ */
+
+
+/**
+ * Creates a new manager and tries to boot up the previous task list from disk.
+ *
+ * @param filePath Where the save file is located.
+ * @param ui The user interface used to shout at (or inform) the user.
  */
 
 public class TaskManager {
@@ -34,6 +44,14 @@ public class TaskManager {
         }
     }
 
+    /**
+     * Parses the user's input to create a Deadline.
+     * It looks for the '/by' keyword to split the description from the date.
+     *
+     * @param args The raw string containing the description and deadline date.
+     * @throws NovichokException If the user forgets the date or uses a weird format.
+     */
+
     private void addDeadline(String args) throws NovichokException {
         String[] parts = args.split(" /by ", 2);
         if (parts.length < 2) {
@@ -52,6 +70,14 @@ public class TaskManager {
             throw new NovichokException("Format error! Please use: d/M/yyyy HHmm (e.g., 19/2/2026 1800)");
         }
     }
+
+    /**
+     * Handles the creation of an Event.
+     * It expects both a '/from' and a '/to' tag to define the timeframe.
+     *
+     * @param args The input string provided by the user.
+     * @throws NovichokException If the user messes up the event syntax.
+     */
 
     private void addEvent(String args) throws NovichokException {
         if (args.trim().isEmpty()) {
@@ -74,6 +100,13 @@ public class TaskManager {
             throw new NovichokException("Format error! Please use: d/M/yyyy HHmm (e.g., 19/2/2026 1800)");
         }
     }
+
+    /**
+     * Adds a simple ToDo task. Just the description
+     *
+     * @param args The description of the task.
+     * @throws NovichokException If the user tries to add an empty ToDo.
+     */
 
     private void addToDo(String args) throws NovichokException {
         if (args.trim().isEmpty()) {
@@ -105,7 +138,15 @@ public class TaskManager {
         }
     }
 
-    //** User Action passes the action to take, user command parses the arguments
+    /**
+     * This is the main traffic controller. It takes the user's command word
+     * and decides which method should handle the work. It also triggers
+     * an auto-save if the task list was changed.
+     *
+     * @param commandAction The action to perform (e.g., "list", "todo", "delete").
+     * @param args The rest of the user's input string.
+     */
+
     public void executeCommand(String commandAction, String args) {
         try {
             boolean isListModified = true;
@@ -149,7 +190,6 @@ public class TaskManager {
                 default:
                     throw new NovichokException("This is not a valid command");
             }
-
             if (isListModified) {
                 storage.saveListToDisk(taskList);
             }
@@ -160,7 +200,15 @@ public class TaskManager {
             ui.printCustomMessage("Novichok: Could not save tasks to disk. " + e.getMessage());
         }
     }
-    // TODO: increase robustness of filtering
+
+    /**
+     * Searches through the tasks based on specific criteria like date, name, or type.
+     *
+     * @param args The filter type and value (e.g., "/date 19/2/2026").
+     * @return A list of tasks that survived the filtering process.
+     * @throws NovichokException If the filter arguments are missing or invalid.
+     */
+
     private List<Task> filterBy(String args) throws NovichokException {
         if (args.trim().isEmpty()) {
             throw new NovichokException("Filter command needs arguments (e.g., filter /date 12/12/2026 1800)");
@@ -214,9 +262,19 @@ public class TaskManager {
         return filteredTaskList;
     }
 
+    /**
+     * Grabs the entire current task list.
+     *
+     * @return The list of tasks.
+     */
+
     public List<Task> getTaskList() {
         return this.taskList;
     }
+
+    /**
+     * Helper method to tell the user that a task was successfully added.
+     */
 
     private void printAddedMessage(Task task) {
         ui.printCustomMessage("The following task has been added to the list:");
@@ -224,13 +282,20 @@ public class TaskManager {
         ui.printCustomMessage("Your list has " + taskList.size() + " task(s) in progress");
     }
 
+    /**
+     * Helper method to confirm to the user that a task was wiped from the list.
+     */
+
     private void printDeletedMessage(Task task) {
         ui.printCustomMessage("Executed. The following task is no more:");
         ui.printCustomMessage("\t" + task.toString());
         ui.printCustomMessage("There are " + taskList.size() + " tasks remaining.");
     }
 
-    // prints all recorded tasks
+    /**
+     * Loops through all tasks and prints them in a numbered list format.
+     */
+
     public void printList() {
         int j = 1;
         for (Task task: getTaskList()) {
@@ -239,7 +304,18 @@ public class TaskManager {
         }
     }
 
-    // User input sanitization
+    /**
+     * Takes a string of task numbers, turns them into actual integers,
+     * removes duplicates, and sorts them in reverse.
+     *
+     * Why reverse? Because if we delete index 1, index 2 becomes the new index 1.
+     * Deleting from the back prevents this "shifting" headache.
+     *
+     * @param args String input from user (e.g., "3 1 2").
+     * @return A list of clean, 0-indexed integers.
+     * @throws NovichokException If the user types something that isn't a number.
+     */
+
     private List<Integer> sanitizeIndices(String args) throws NovichokException {
         String[] inputs = args.trim().split("\\s+");
         List<Integer> indices = new ArrayList<>();
@@ -262,9 +338,20 @@ public class TaskManager {
                 .toList();
     }
 
+    /**
+     * Sets a task's status to done or not done.
+     */
+
     public void setTaskStatus(Task task, boolean isDone) {
         task.setStatus(isDone);
     }
+
+    /**
+     * Processes "mark" or "unmark" requests for one or multiple tasks.
+     *
+     * @param action Either "mark" or "unmark".
+     * @param args The task number(s) the user wants to update.
+     */
 
     public void taskStatusUpdate(String action, String args) {
         try {
